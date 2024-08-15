@@ -23,6 +23,7 @@ bool logWatts = false;
 void handleWatts();
 void logOn();
 void logOff();
+void jsonEndpoint();
 
 void setup() {
 
@@ -40,6 +41,9 @@ void setup() {
 
 	mylog.getServer()->on("/logOff", logOff);
 	mylog.addHtmlExtraMenuOption("LogOff", "/logOff");
+
+	mylog.getServer()->on("/json", jsonEndpoint);
+	mylog.addHtmlExtraMenuOption("Watts JSON", "/json");
 
 
 	emon1.current(ADC_INPUT, 100);
@@ -61,7 +65,7 @@ void loop() {
 		double amps = emon1.calcIrms(1480); // Calculate Irms only
 	    watts = amps * HOME_VOLTAGE;
 		//pos fact incorrect compensation (tested with a 800w microwave)
-		watts = watts * 1.077 - 60;
+		watts = watts * 1.077;
 		if (watts < 0) watts = 0;
 		if(logWatts) mylog.printf("watts: %f\n", watts);
 	}
@@ -78,10 +82,17 @@ void logOn(){
 	logWatts = true;
 	mylog.print("Turn Log ON\n");
 }
+
 void logOff(){
 	mylog.getServer()->send(200, "text/plain", "log OFF OK!");
 	logWatts = false;
 	mylog.print("Turn Log OFF\n");
+}
+
+void jsonEndpoint(){
+	String str = "{\"watts\":" + String(watts, 1) + "}";
+	mylog.getServer()->sendHeader("Access-Control-Allow-Origin", "*");
+	mylog.getServer()->send(200, "application/json", str.c_str());
 }
 
 
