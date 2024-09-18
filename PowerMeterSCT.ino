@@ -45,6 +45,10 @@ void setup() {
 	mylog.getServer()->on("/json", jsonEndpoint);
 	mylog.addHtmlExtraMenuOption("Watts JSON", "/json");
 
+	//setup watchdog
+	ESP.wdtDisable();
+	ESP.wdtEnable(WDTO_8S);
+	mylog.print("Watchdog Enabled!\n");
 
 	emon1.current(ADC_INPUT, 100);
 
@@ -67,7 +71,9 @@ void loop() {
 		//pos fact incorrect compensation (tested with a 800w microwave)
 		watts = watts * 1.077;
 		if (watts < 0) watts = 0;
-		if(logWatts) mylog.printf("watts: %f\n", watts);
+		if(logWatts) mylog.printf("watts: %f\n", watts);		
+		
+		ESP.wdtFeed(); //feed watchdog frequently
 	}
 }
 
