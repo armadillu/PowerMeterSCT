@@ -7,6 +7,7 @@
 /////////////////////////////////////
 #define HOST_NAME "PowerMeter"
 #define HOME_VOLTAGE 230.0
+#define CALIBRATION_V 135.0f
 // Force EmonLib to use 10bit ADC resolution
 #define ADC_INPUT 	A0
 #define ADC_BITS    10
@@ -27,9 +28,13 @@ void jsonEndpoint();
 
 void setup() {
 
-	uint8_t bssid[6] = {0x60,0x8d,0x26,0xeb,0xe2,0x8b}; //60:8d:26:eb:e2:8b Orangebox6
+//	uint8_t bssid[6] = {0x60,0x8d,0x26,0xeb,0xe2,0x8b}; //60:8d:26:eb:e2:8b Orangebox6
+	uint8_t bssid[6] = {0xb0,0x4e,0x26,0x4f,0xe5,0x70}; //b0:4e:26:4f:e5:70 tp-link
+
+	//stick to a single BSSID
 	mylog.setup(HOST_NAME, ssid, password, bssid);
 
+	//connect to any BSSID with that SSID
 	//mylog.setup(HOST_NAME, ssid, password);
 
 	//add an extra endpoint
@@ -50,11 +55,12 @@ void setup() {
 	ESP.wdtEnable(WDTO_8S);
 	mylog.print("Watchdog Enabled!\n");
 
-	emon1.current(ADC_INPUT, 100);
+	emon1.current(ADC_INPUT, CALIBRATION_V);
 
 	ArduinoOTA.setHostname(HOST_NAME);
 	ArduinoOTA.setRebootOnSuccess(true);
 	ArduinoOTA.begin();
+	mylog.printf("Calibration val: %f\n", CALIBRATION_V);	
 	mylog.print("ready!\n");
 }
 
@@ -68,13 +74,12 @@ void loop() {
 		lastMeasurement = currentMillis;
 		double amps = emon1.calcIrms(1480); // Calculate Irms only
 	    watts = amps * HOME_VOLTAGE;
-		//pos fact incorrect compensation (tested with a 800w microwave)
-		watts = watts * 1.077;
 		if (watts < 0) watts = 0;
-		if(logWatts) mylog.printf("watts: %f\n", watts);		
-		
-		ESP.wdtFeed(); //feed watchdog frequently
+		if(logWatts) mylog.printf("watts: %f\n", watts);						
 	}
+	
+	delay(30);
+	ESP.wdtFeed(); //feed watchdog frequently
 }
 
 
@@ -96,7 +101,7 @@ void logOff(){
 }
 
 void jsonEndpoint(){
-	String str = "{\"watts\":" + String(watts, 1) + "}";
+	String str = "{\"watts\":" + String(watts, 2) + "}";
 	mylog.getServer()->sendHeader("Access-Control-Allow-Origin", "*");
 	mylog.getServer()->send(200, "application/json", str.c_str());
 }
@@ -109,7 +114,7 @@ String GenerateMetrics() {
 	message += "# TYPE temp gauge\n";
 	message += "watts";
 	message += idString;
-	message += String(watts, 1);
+	message += String(watts, 2);
 	message += "\n";
 	return message;
 }
