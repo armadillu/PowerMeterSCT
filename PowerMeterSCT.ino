@@ -78,7 +78,7 @@ void loop() {
 		if(logWatts) mylog.printf("watts: %f\n", watts);						
 	}
 	
-	delay(30);
+	delay(15);
 	ESP.wdtFeed(); //feed watchdog frequently
 }
 
@@ -109,12 +109,19 @@ void jsonEndpoint(){
 
 String GenerateMetrics() {
 	String message = "";
-	String idString = "{}";
+	String idString = "{ip=\"" + WiFi.localIP().toString() + "\"}";
 	message += "# HELP watts Watts\n";
-	message += "# TYPE temp gauge\n";
+	message += "# TYPE watts gauge\n";
 	message += "watts";
 	message += idString;
 	message += String(watts, 2);
+
+	message += "\n# HELP wifi Wifi Signal RSSI\n";
+	message += "# TYPE wifi gauge\n";
+	message += "wifi";
+	message += idString;
+	message += String((int)WiFi.RSSI());
 	message += "\n";
+
 	return message;
 }
