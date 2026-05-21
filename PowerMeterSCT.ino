@@ -32,10 +32,10 @@ void setup() {
 	uint8_t bssid[6] = {0xb0,0x4e,0x26,0x4f,0xe5,0x70}; //b0:4e:26:4f:e5:70 tp-link
 
 	//stick to a single BSSID
-	mylog.setup(HOST_NAME, ssid, password, bssid);
+	//mylog.setup(HOST_NAME, ssid, password, bssid);
 
 	//connect to any BSSID with that SSID
-	//mylog.setup(HOST_NAME, ssid, password);
+	mylog.setup(HOST_NAME, ssid, password);
 
 	//add an extra endpoint
 	mylog.getServer()->on("/watts", handleWatts);
@@ -73,12 +73,12 @@ void loop() {
 	if(currentMillis - lastMeasurement > 1000){
 		lastMeasurement = currentMillis;
 		double amps = emon1.calcIrms(1480); // Calculate Irms only
-	    watts = amps * HOME_VOLTAGE;
+	    watts = amps * HOME_VOLTAGE * 1.181818181818182;
 		if (watts < 0) watts = 0;
 		if(logWatts) mylog.printf("watts: %f\n", watts);						
 	}
 	
-	delay(15);
+	delay(100);
 	ESP.wdtFeed(); //feed watchdog frequently
 }
 
@@ -110,18 +110,18 @@ void jsonEndpoint(){
 String GenerateMetrics() {
 	String message = "";
 	String idString = "{ip=\"" + WiFi.localIP().toString() + "\"}";
-	message += "# HELP watts Watts\n";
-	message += "# TYPE watts gauge\n";
+	//message += "# HELP watts Watts\n";
+	//message += "# TYPE watts gauge\n";
 	message += "watts";
 	message += idString;
-	message += String(watts, 2);
+	message += String(watts, 2) + "\n";
 
-	message += "\n# HELP wifi Wifi Signal RSSI\n";
-	message += "# TYPE wifi gauge\n";
+	//message += "# HELP wifi Wifi Signal RSSI\n";
+	//message += "# TYPE wifi gauge\n";
 	message += "wifi";
 	message += idString;
-	message += String((int)WiFi.RSSI());
-	message += "\n";
+	message += String((int)WiFi.RSSI()) + "\n";
+
 
 	return message;
 }
